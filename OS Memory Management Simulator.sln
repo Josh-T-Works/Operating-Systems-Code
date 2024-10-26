@@ -1,31 +1,168 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.3.32825.248
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OS Memory Management Simulator", "OS Memory Management Simulator.vcxproj", "{77255253-0E1E-49FC-BE7E-2FEDC547AE46}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Debug|x64.ActiveCfg = Debug|x64
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Debug|x64.Build.0 = Debug|x64
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Debug|x86.ActiveCfg = Debug|Win32
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Debug|x86.Build.0 = Debug|Win32
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Release|x64.ActiveCfg = Release|x64
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Release|x64.Build.0 = Release|x64
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Release|x86.ActiveCfg = Release|Win32
-		{77255253-0E1E-49FC-BE7E-2FEDC547AE46}.Release|x86.Build.0 = Release|Win32
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {35E18BA0-6209-4C7F-A80F-DB22435D5819}
-	EndGlobalSection
-EndGlobal
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+
+using namespace std;
+
+// Global variables for memory size and bitmap
+const int MEMORY_SIZE = 32;  // Example memory size
+unordered_map<int, pair<int, int>> process;
+vector<pair<int, int>> holes;
+string mem = "00000000000000000000000000000000";
+// Function to allocate memory using Best Fit algorithm
+void allocateMemory(int processID, int allocationBlocks) {
+    
+    // Implement Here.
+    int i = 0;
+    bool perfect = false;
+    bool space = false; // IMPLEMENT THIS
+    while (i < MEMORY_SIZE && !(perfect))
+    {
+        if (mem[i] == '0')
+        {
+            int count = 0;
+            int start = i;
+            while (mem[i] == '0')
+            {
+                count++;
+                i++;
+            }
+            if (count == allocationBlocks)
+            {
+                process[processID] = make_pair(start, start + count - 1);
+                perfect = true;
+            }
+            else
+            {
+                holes.push_back(make_pair(start, start + count - 1));
+            }
+            i--;
+        }
+        i++;
+    }
+
+    if (perfect)
+    {
+        int start = process[processID].first;
+        int end = process[processID].second;
+        int init = start;
+        while (start <= end)
+        {
+            mem[start] = '1';
+            start++;
+        }
+        cout << "Memory allocated to process " << processID << " from index " << init << " to " << end << "." << endl;
+        //process[processID] = make_pair(init, end);
+    }
+    else
+    {
+        int holeMin = 33;
+        int i1 = 33;
+        int i2 = 33;
+        for (auto v : holes)
+        {
+            int start = v.first;
+            int end = v.second;
+            int hSize = end - start + 1;
+
+            if (hSize < holeMin && hSize > allocationBlocks)
+            {
+                holeMin = hSize;
+                i1 = start;
+                i2 = end;
+            }
+        }
+        if (holeMin > allocationBlocks && holeMin != 33)
+        {
+            int start = i1;
+            int count = 0;
+            while (count < allocationBlocks)
+            {
+                mem[i1] = '1';
+                i1++;
+                count++;
+            }
+            count--;
+            cout << "Memory allocated to process " << processID << " from index " << start << " to " << start + count << "." << endl;
+            process[processID] = make_pair(start, start + count);
+            holes.clear();
+        }
+        else cout << "Error: Not enough memory available for process." << endl;
+        holes.clear();
+    }
+}
+
+// Function to free memory using Process ID
+void freeMemory(int processID) {
+
+    // Implement Here.
+    auto iter = process.find(processID);
+
+    if (iter != process.end())
+    {
+        int start = process[processID].first;
+        int end = process[processID].second;
+        int init = start;
+        while (start <= end)
+        {
+            mem[start] = '0';
+            start++;
+        }
+        cout << "Memory for process " << processID << " has been freed from index " << init << " to " << end << "." << endl;
+        process.erase(processID);
+    }
+    else cout << "Error: Process Not Found" << endl;
+}
+
+// Function to display the memory bitmap
+void displayMemoryBitmap() {
+
+    // Implement Here.
+    cout << "Memory Bitmap: ";
+    for (int i = 0; i < MEMORY_SIZE; i++)
+    {
+        cout << mem[i] << ' ';
+    }
+    cout << endl;   
+}
+
+// Main function to drive the menu
+int main() {
+    int choice;
+    int allocationBlocks, processID;
+
+    do {
+        cout << "\nMemory Management Menu:\n";
+        cout << "1. Allocate Memory for a Process\n";
+        cout << "2. Free Memory for a Process\n";
+        cout << "3. Display Memory Bitmap\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            cout << "Enter Process ID: ";
+            cin >> processID;
+            cout << "Enter the number of allocation blocks: ";
+            cin >> allocationBlocks;
+            allocateMemory(processID, allocationBlocks);
+            break;
+        case 2:
+            cout << "Enter Process ID to free memory: ";
+            cin >> processID;
+            freeMemory(processID);
+            break;
+        case 3:
+            displayMemoryBitmap();
+            break;
+        case 4:
+            cout << "Goodbye!\n";
+            break;
+        default:
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 4);
+
+    return 0;
+}
